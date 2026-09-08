@@ -34,6 +34,8 @@ CATALOG_COMMIT=<commit-A> CATALOG_PUBLISH=1 node scripts/generate-catalog.cjs
 node scripts/validate-structure.cjs --catalog
 ```
 
+`catalog/v1/publish-metadata.json` 是正式市场发布 allowlist，维护每个已发布模板的准确 `version`、`description` 和 `tags`，不属于 TraceMemo 模板 manifest 协议。generator 会动态发现模板源码，但只生成 metadata 明确声明的 ID 和版本；已合并却未声明在此文件中的模板或更高版本不会自动上架。每个被声明的版本都必须具备源码、安装包和市场预览，否则生成直接失败。
+
 正式目录的 `source.commit`、下载 URL、预览 URL、ZIP 大小和 SHA-256 必须固定到同一个源码/产物 commit。已发布版本不可覆盖；修改请增加新版本，并重新生成对应的安装包、预览和目录条目。
 
 ## 提交流程

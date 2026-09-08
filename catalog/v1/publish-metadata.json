@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1",
+  "templates": {
+    "community.github.tracememo.quickread": {
+      "version": "1.0.0",
+      "description": "手机单栏，先看摘要、结论和行动项。",
+      "tags": ["手机", "速读"]
+    },
+    "community.github.tracememo.paperdaily": {
+      "version": "1.0.1",
+      "description": "手机报纸式编辑版，突出标题、话题和引语。",
+      "tags": ["手机", "编辑版"]
+    },
+    "community.github.tracememo.teamboard": {
+      "version": "1.0.0",
+      "description": "桌面宽屏多栏看板，适合团队复盘和归档。",
+      "tags": ["桌面", "看板", "复盘"]
+    },
+    "community.github.wxw-gu.mountain-daily": {
+      "version": "1.0.0",
+      "description": "山水主题的桌面协作日报，适合整理多人讨论与行动项。",
+      "tags": ["桌面", "协作", "山水"]
+    }
+  }
+}

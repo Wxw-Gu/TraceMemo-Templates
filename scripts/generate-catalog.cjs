@@ -5,12 +5,8 @@ const crypto = require('node:crypto')
 
 const root = path.resolve(__dirname, '..')
 const repo = 'Wxw-Gu/TraceMemo-Templates'
-const ids = [
-  'community.github.tracememo.quickread',
-  'community.github.tracememo.paperdaily',
-  'community.github.tracememo.teamboard'
-]
 const semverPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
+const templateIdPattern = /^community\.github\.[a-z0-9-]+\.[a-z0-9-]+$/
 const commit = process.env.CATALOG_COMMIT || 'DRAFT_COMMIT_PENDING'
 const generatedAt = process.env.CATALOG_GENERATED_AT || new Date().toISOString()
 const publish = process.env.CATALOG_PUBLISH === '1'
@@ -19,60 +15,81 @@ if (publish && !/^[0-9a-f]{40}$/.test(commit)) {
   throw new Error('正式目录必须通过 CATALOG_COMMIT 提供 40 位提交 SHA')
 }
 
-const compareVersions = (left, right) => {
-  const parse = (value) => value.split('-')[0].split('.').map(Number)
-  const a = parse(left)
-  const b = parse(right)
-  for (let index = 0; index < 3; index += 1) {
-    if (a[index] !== b[index]) return a[index] - b[index]
-  }
-  return left.localeCompare(right)
+const safeRelativePath = (value) => typeof value === 'string' && value.length > 0 &&
+  !path.isAbsolute(value) && !value.split(/[\\/]/).includes('..') && !value.includes('\\')
+
+const publishMetadataPath = path.join(root, 'catalog', 'v1', 'publish-metadata.json')
+const publishMetadata = JSON.parse(fs.readFileSync(publishMetadataPath, 'utf8'))
+if (publishMetadata.schemaVersion !== '1' || !publishMetadata.templates || typeof publishMetadata.templates !== 'object') {
+  throw new Error('catalog/v1/publish-metadata.json: 元数据格式不正确')
 }
 
-const versionsFor = (id) => fs.readdirSync(path.join(root, 'templates', id), { withFileTypes: true })
-  .filter((entry) => entry.isDirectory() && semverPattern.test(entry.name))
-  .map((entry) => entry.name)
-  .sort(compareVersions)
-
-const descriptionFor = (id) => id.endsWith('quickread')
-  ? '手机单栏，先看摘要、结论和行动项。'
-  : id.endsWith('paperdaily')
-    ? '手机报纸式编辑版，突出标题、话题和引语。'
-    : '桌面宽屏多栏看板，适合团队复盘和归档。'
-
-const tagsFor = (id, platform) => platform === 'desktop'
-  ? ['桌面', '看板', '复盘']
-  : ['手机', id.endsWith('quickread') ? '速读' : '编辑版']
-
-const findCurrent = (id) => {
-  const versions = versionsFor(id).reverse()
-  for (const version of versions) {
-    const templateDir = path.join(root, 'templates', id, version)
-    const manifestPath = path.join(templateDir, 'manifest.json')
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
-    const packagePath = path.join(root, 'packages', id, version, `${id}-${version}.zip`)
-    if (!fs.existsSync(packagePath)) continue
-    const previewCandidates = [`${id}-${version}.png`, `${id}.png`]
-    const previewName = previewCandidates.find((name) => fs.existsSync(path.join(root, 'previews', name)))
-    if (!previewName) throw new Error(`${id}@${version}: 缺少预览图`)
-    return { id, version, manifest, packagePath, previewName }
+const metadataFor = (id) => {
+  const metadata = publishMetadata.templates[id]
+  if (!metadata || !semverPattern.test(metadata.version) || typeof metadata.description !== 'string' || !metadata.description.trim() ||
+    !Array.isArray(metadata.tags) || metadata.tags.length === 0 || metadata.tags.some((tag) => typeof tag !== 'string' || !tag.trim())) {
+    throw new Error(`${id}: 缺少有效的 catalog version、description 或 tags 元数据`)
   }
-  throw new Error(`${id}: 没有同时存在源码和安装包的有效版本`)
+  return { version: metadata.version, description: metadata.description, tags: metadata.tags }
 }
 
-const current = ids.map(findCurrent)
+const discoverTemplateIds = () => {
+  const templatesRoot = path.join(root, 'templates')
+  const ids = fs.readdirSync(templatesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((id) => templateIdPattern.test(id))
+    .sort()
+  if (ids.length === 0) throw new Error('templates/: 没有可发布的模板源码')
+  return new Set(ids)
+}
 
-const buildEntries = (status) => current.map(({ id, version, manifest, packagePath, previewName }) => {
+const publishableTemplate = ({ id, version }) => {
+  const templateDir = path.join(root, 'templates', id, version)
+  const manifestPath = path.join(templateDir, 'manifest.json')
+  if (!fs.existsSync(manifestPath)) throw new Error(`${id}@${version}: 缺少 manifest.json`)
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+  if (manifest.id !== id || manifest.templateVersion !== version || manifest.protocolVersion !== '1.0' ||
+    manifest.interfaceVersion !== '1' || manifest.kind !== 'daily-report') {
+    throw new Error(`${id}@${version}: manifest 协议或目录字段不匹配`)
+  }
+  if (!safeRelativePath(manifest.entry) || !fs.existsSync(path.join(templateDir, manifest.entry))) {
+    throw new Error(`${id}@${version}: 缺少入口文件`)
+  }
+  if (!safeRelativePath(manifest.preview) || !fs.existsSync(path.join(templateDir, manifest.preview))) {
+    throw new Error(`${id}@${version}: 缺少模板预览图`)
+  }
+  if (!manifest.name || !manifest.author?.name || !manifest.platform || !manifest.license?.spdx) {
+    throw new Error(`${id}@${version}: manifest 缺少 catalog 所需字段`)
+  }
+  const packagePath = path.join(root, 'packages', id, version, `${id}-${version}.zip`)
+  if (!fs.existsSync(packagePath) || fs.statSync(packagePath).size === 0) throw new Error(`${id}@${version}: 缺少非空安装包`)
+  const previewCandidates = [`${id}-${version}.png`, `${id}.png`]
+  const previewName = previewCandidates.find((name) => fs.existsSync(path.join(root, 'previews', name)))
+  if (!previewName) throw new Error(`${id}@${version}: 缺少市场预览图`)
+  return { id, version, manifest, packagePath, previewName, metadata: metadataFor(id) }
+}
+
+const discoveredTemplateIds = discoverTemplateIds()
+const current = Object.keys(publishMetadata.templates)
+  .sort()
+  .map((id) => {
+    if (!discoveredTemplateIds.has(id)) throw new Error(`${id}: publish-metadata 指向不存在的模板源码`)
+    const metadata = metadataFor(id)
+    return publishableTemplate({ id, version: metadata.version })
+  })
+
+const buildEntries = (status) => current.map(({ id, version, manifest, packagePath, previewName, metadata }) => {
   const bytes = fs.readFileSync(packagePath)
   return {
     id: manifest.id,
     version: manifest.templateVersion,
     interfaceVersion: manifest.interfaceVersion,
     name: manifest.name,
-    description: descriptionFor(id),
+    description: metadata.description,
     author: manifest.author.name,
     platform: manifest.platform,
-    tags: tagsFor(id, manifest.platform),
+    tags: metadata.tags,
     license: manifest.license.spdx,
     minAppVersion: manifest.minAppVersion || null,
     download: `https://raw.githubusercontent.com/${repo}/${commit}/packages/${id}/${version}/${id}-${version}.zip`,
