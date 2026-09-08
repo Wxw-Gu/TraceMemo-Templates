@@ -11,7 +11,7 @@
 
 ## 本地检查
 
-需要 Node.js 18+、系统 `zip`，以及用于截图的 Playwright。默认从相邻的 TraceMemo checkout 查找 Playwright，也可以通过 `TRACEMEMO_ROOT` 指定路径。
+需要 Node.js 18+、系统 `zip` 与 `unzip`，以及用于截图的 Playwright。默认从相邻的 TraceMemo checkout 查找 Playwright，也可以通过 `TRACEMEMO_ROOT` 指定路径。
 
 ```bash
 node scripts/validate-structure.cjs
@@ -25,7 +25,7 @@ node scripts/validate-structure.cjs --catalog
 
 ## 目录和发布
 
-`catalog/v1/drafts/index.json` 是 review 目录：用于记录尚未完成 TraceMemo 实际安装、重启恢复、HTML/PNG 导出和远端哈希核对的投稿版本。它有真实的审核用途，不是内部工作日志。
+`templates/` 是投稿模板源码的完整集合；模板源码存在不代表已经进入模板市场。`catalog/v1/drafts/index.json` 是 review 目录：用于记录尚未完成 TraceMemo 实际安装、重启恢复、HTML/PNG 导出和远端哈希核对的投稿版本。它和正式 catalog 都可以只引用源码集合中的一部分版本，有真实的审核用途，不是内部工作日志。
 
 完成维护者验收后，在已经提交源码、安装包和预览图的 commit 上生成正式目录：
 
