@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "groupName": "星河协作组 & 示例群",
+    "reportDate": "2026-09-07",
+    "dateRange": "2026-09-07 09:12-19:48",
+    "recordNote": "示例数据：用于模板排版校验，不对应真实聊天记录。",
+    "generatedAt": "2026-09-07 22:18",
+    "reportMode": "full"
+  },
+  "summary": {
+    "headline": "接口排查和版本升级是今天主线",
+    "overview": "白天主要围绕接口异常、升级节奏和上线安排展开，结论比争论更多，待跟进事项也比较集中。",
+    "takeaway": "大家确认本次异常更像缓存与配置问题，而不是服务端挂掉。",
+    "pending": "测试环境接口文档和回滚方案仍需补齐。",
+    "statusLine": "今日形成 3 个结论 · 2 个待办 · 1 个问题尚未解决"
+  },
+  "stats": { "messages": 382, "activeUsers": 47, "timeSpan": "11 h", "topics": 4, "media": 28, "conclusions": 3, "todos": 2, "unresolved": 1 },
+  "topics": [
+    { "title": "GPT 接口异常排查 <&>", "time": "09:20-11:05", "heat": "高", "summary": "几轮排查后，问题收敛到缓存与环境配置，而不是后端服务不可用。", "conclusion": "先清缓存再复测，避免旧响应误判成线上事故。", "participants": "阿宇、老周、超长昵称示例用户" },
+    { "title": "版本升级节奏", "time": "11:40-12:20", "heat": "中", "summary": "讨论从能不能升转成这周值不值得升，最终倾向先补兼容性清单。", "conclusion": "先列旧组件清单，再决定升级窗口。", "participants": "阿宇、we water" },
+    { "title": "上线节奏与回滚准备", "time": "15:10-16:05", "heat": "中", "summary": "大家更关注回滚准备是否充分，重点放在文档、监控和路径补齐。", "conclusion": "上线前需要补一版简短回滚说明。", "participants": "老周、小李" }
+  ],
+  "messages": [
+    { "sender": "阿宇", "time": "10:41", "content": "先别回滚，接口能通。", "note": "稳定了排查方向。" },
+    { "sender": "老周", "time": "11:02", "content": "像是缓存没清掉。", "note": "把问题收敛到本地环境。" },
+    { "sender": "超长昵称示例用户（含 & < >）", "time": "15:36", "content": "上线前把回滚文档补一下。", "note": "明确形成待办。" }
+  ],
+  "quotes": [
+    { "sender": "阿宇", "text": "我以为接口炸了。", "reply": "老周：先别慌，先清缓存。", "note": "从要不要回滚切到先做最小验证。" }
+  ],
+  "todos": [
+    { "task": "补测试环境接口文档", "owner": "小李", "deadline": "今晚" },
+    { "task": "整理回滚说明", "owner": "老周", "deadline": "明早" }
+  ],
+  "unresolved": [{ "question": "缓存问题的根因是不是插件残留？", "owner": "阿宇", "status": "待跟进" }],
+  "qa": [{ "question": "接口是不是服务端挂了？", "answer": "不是，当前更像缓存与环境问题。", "answerer": "老周" }],
+  "keywords": "GPT / 接口 / 缓存 / 升级 / 上线 / 回滚 / 监控",
+  "sparse": { "topics": [], "messages": [], "quotes": [], "todos": [], "unresolved": [], "qa": [], "note": "示例数据：本日报没有问答、图片或待办。" }
+}

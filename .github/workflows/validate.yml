@@ -1,0 +1,19 @@
+name: validate templates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate repository structure
+        run: node scripts/validate-structure.cjs
+      - name: Check package and catalog consistency
+        run: node scripts/validate-structure.cjs --catalog

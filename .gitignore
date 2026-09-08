@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+.tmp/
+
+# Local AI planning and handoff notes
+
+/HANDOFF.local.md
+/task_plan.md
+/findings.md
+/progress.md
+/.ai-local/
