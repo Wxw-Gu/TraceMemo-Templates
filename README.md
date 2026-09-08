@@ -18,13 +18,23 @@
 
 目录中的当前版本提供 `manifest.json`、`template.html` 和预览图。安装包不包含 JavaScript、外链资源或模板目录外的文件；示例文字、昵称和群名均为虚构数据，并会在页面中标明示例用途。
 
+## 🤖 使用 AI 制作 TraceMemo 模板
+
+打开 [TraceMemo Template Contributor](https://github.com/Wxw-Gu/TraceMemo-Templates/tree/main/skills/tracememo-template-contributor) 目录并复制当前 GitHub URL，直接发给能够读取 GitHub 仓库的 Codex、ChatGPT 或其他 AI。AI 会读取其中的 `SKILL.md` 和 references，再读取本仓库当前的贡献规范、模板示例和校验工具，帮助你把日报项目转换成 TraceMemo 模板、生成真实预览，并在你满意后提交审核。
+
+你可以这样告诉 AI：
+
+> 请读取这个 TraceMemo Template Contributor Skill，把我当前项目里的日报转换成 TraceMemo 模板，生成预览；我确认满意后帮我提交审核。
+
+也可以从零开始：
+
+> 请读取这个 Skill，根据我提供的日报截图制作一个极简科技风 TraceMemo 模板，生成真实预览；满意后帮我提交审核。
+
+GitHub Skill 目录是主要分发入口；支持标准 Skill 安装的客户端也可以将该目录作为 Skill 使用。是否能直接读取 GitHub URL 取决于客户端能力，不代表所有客户端都会自动安装。
+
 ## 在 TraceMemo 中使用
 
-1. 在 TraceMemo 的模板目录或模板安装入口中读取本仓库的 `catalog/v1/index.json`。
-2. 选择目录条目中的 `download` 地址，下载对应模板 ZIP。
-3. 在 TraceMemo 的模板安装入口导入 ZIP，然后选择模板生成日报。
-
-目录中的 `sizeBytes` 和 `sha256` 用于确认下载内容与仓库发布的安装包一致。TraceMemo 的具体入口名称和可用版本以[主项目](https://github.com/Wxw-Gu/TraceMemo)为准。
+在 TraceMemo 中依次打开：日报 → 今日日报 → 日报模板 → 模板市场。选择喜欢的模板并安装即可。具体入口名称和可用版本以[主项目](https://github.com/Wxw-Gu/TraceMemo)为准。
 
 ## 仓库内容
 
