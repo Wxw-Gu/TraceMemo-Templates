@@ -1,0 +1,14 @@
+{
+  "protocolVersion": "1.0",
+  "kind": "daily-report",
+  "id": "community.github.wxw-gu.mountain-daily",
+  "name": "山水协作日报",
+  "author": { "name": "Wxw-Gu" },
+  "templateVersion": "1.0.0",
+  "interfaceVersion": "1",
+  "entry": "template.html",
+  "preview": "preview.png",
+  "capture": { "width": 1000, "maxWidth": 1000, "maxHeight": 20000 },
+  "license": { "spdx": "MIT", "notice": "原创社区模板，视觉设计依据用户提供的日报截图重新实现。" },
+  "platform": "desktop"
+}
