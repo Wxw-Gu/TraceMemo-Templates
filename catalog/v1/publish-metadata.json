@@ -20,6 +20,11 @@
       "version": "1.0.0",
       "description": "山水主题的桌面协作日报，适合整理多人讨论与行动项。",
       "tags": ["桌面", "协作", "山水"]
+    },
+    "community.github.wxw-gu.neon-command-daily": {
+      "version": "1.0.0",
+      "description": "霓光主题的桌面指挥日报，突出实时讨论、重点消息与行动项。",
+      "tags": ["桌面", "指挥", "霓光"]
     }
   }
 }
