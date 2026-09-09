@@ -9,13 +9,13 @@ const { pathToFileURL } = require('node:url')
 const root = path.resolve(__dirname, '..')
 const tmRoot = process.env.TRACEMEMO_ROOT || path.resolve(root, '..', 'TraceMemo')
 const version = process.env.TEMPLATE_VERSION || '1.0.1'
-const id = 'community.github.tracememo.paperdaily'
+const id = process.env.TEMPLATE_ID || 'community.github.tracememo.paperdaily'
 const sourceDir = path.join(root, 'templates', id, version)
 const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tracememo-paperdaily-preview-output-'))
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'tracememo-paperdaily-preview-user-'))
 const staging = fs.mkdtempSync(path.join(os.tmpdir(), 'tracememo-paperdaily-preview-package-'))
 const packagePath = path.join(staging, `${id}-${version}.zip`)
-const evidenceDir = path.join(root, '.tmp', `paperdaily-production-preview-${version}`)
+const evidenceDir = path.join(root, '.tmp', `${id.replaceAll('.', '-')}-production-preview-${version}`)
 
 const fixture = {
   overview: '虚构多人日报：接口排查与上线准备。',
@@ -56,10 +56,13 @@ const manifest = JSON.parse(fs.readFileSync(path.join(sourceDir, 'manifest.json'
 manifest.templateVersion = version
 fs.mkdirSync(staging, { recursive: true })
 fs.writeFileSync(path.join(staging, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
-fs.copyFileSync(path.join(sourceDir, 'template.html'), path.join(staging, 'template.html'))
+fs.copyFileSync(path.join(sourceDir, manifest.entry), path.join(staging, manifest.entry))
 // 安装器需要一个有效预览图；最终预览由 TM 导出结果覆盖。
-fs.copyFileSync(path.join(root, 'templates', id, '1.0.0', 'preview.png'), path.join(staging, 'preview.png'))
-execFileSync('zip', ['-X', '-q', packagePath, 'manifest.json', 'template.html', 'preview.png'], { cwd: staging })
+fs.copyFileSync(path.join(sourceDir, manifest.preview), path.join(staging, manifest.preview))
+if (fs.existsSync(path.join(sourceDir, 'assets'))) fs.cpSync(path.join(sourceDir, 'assets'), path.join(staging, 'assets'), { recursive: true })
+const packageFiles = ['manifest.json', manifest.entry, manifest.preview]
+if (fs.existsSync(path.join(staging, 'assets'))) packageFiles.push('assets')
+execFileSync('zip', ['-X', '-q', '-r', packagePath, ...packageFiles], { cwd: staging })
 
 const electronExecutable = require(require.resolve('electron', { paths: [path.join(tmRoot, 'node_modules')] }))
 const playwright = require(require.resolve('playwright', { paths: [path.join(tmRoot, 'node_modules')] }))
@@ -77,14 +80,25 @@ const main = async () => {
     const exported = await page.evaluate(async (request) => window.api.exportGroupReport(request), { templateRef: { id, version }, report: fixture, metadata })
     if (!exported.success || !exported.htmlPath || !exported.pngPath) throw new Error(`导出失败：${JSON.stringify(exported)}`)
     const browser = await playwright.chromium.launch({ headless: true })
-    const exportedPage = await browser.newPage({ viewport: { width: 430, height: 1200 }, deviceScaleFactor: 1 })
-    await exportedPage.goto(pathToFileURL(exported.htmlPath).href)
-    await exportedPage.waitForFunction(() => Array.from(document.images).every((image) => image.complete))
+    const inspectPage = async (width) => {
+      const page = await browser.newPage({ viewport: { width, height: 1200 }, deviceScaleFactor: 1 })
+      await page.goto(pathToFileURL(exported.htmlPath).href)
+      await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete))
+      const metrics = await page.evaluate(() => ({ bodyWidth: document.body.getBoundingClientRect().width, scrollWidth: document.documentElement.scrollWidth }))
+      await page.close()
+      if (metrics.scrollWidth > width + 1) throw new Error(`${width}px 页面横向溢出：${JSON.stringify(metrics)}`)
+      return metrics
+    }
+    const desktop = await inspectPage(manifest.capture.width)
+    const mobile = await inspectPage(430)
     const htmlPath = path.join(evidenceDir, `${id}-${version}.html`)
     const pngPath = path.join(evidenceDir, `${id}-${version}.png`)
     fs.copyFileSync(exported.htmlPath, htmlPath)
     fs.copyFileSync(exported.pngPath, pngPath)
-    const metrics = await exportedPage.evaluate(() => {
+    const exportedPage = await browser.newPage({ viewport: { width: 430, height: 1200 }, deviceScaleFactor: 1 })
+    await exportedPage.goto(pathToFileURL(exported.htmlPath).href)
+    await exportedPage.waitForFunction(() => Array.from(document.images).every((image) => image.complete))
+    const details = await exportedPage.evaluate(() => {
       const read = (selector) => {
         const element = document.querySelector(selector)
         if (!element) return null
@@ -92,13 +106,18 @@ const main = async () => {
         const rect = element.getBoundingClientRect()
         return { width: rect.width, height: rect.height, display: style.display, maxWidth: style.maxWidth, objectFit: style.objectFit, overflowWrap: style.overflowWrap }
       }
-      return { avatar: read('.important-card .avatar'), chatAvatar: read('.chat-avatar'), personAvatar: read('.person-chip img'), chatName: read('.chat-name'), bubble: read('.chat-bubble'), bodyWidth: document.body.getBoundingClientRect().width, scrollWidth: document.documentElement.scrollWidth }
+      return { avatar: read('.important-card .avatar'), chatAvatar: read('.chat-avatar'), personAvatar: read('.person-chip img'), chatName: read('.chat-name'), bubble: read('.chat-bubble') }
     })
-    if (!metrics.avatar || Math.round(metrics.avatar.width) !== 34 || Math.round(metrics.avatar.height) !== 34) throw new Error(`重要消息头像尺寸异常：${JSON.stringify(metrics.avatar)}`)
-    if (!metrics.chatAvatar || Math.round(metrics.chatAvatar.width) !== 34 || Math.round(metrics.chatAvatar.height) !== 34) throw new Error(`对话头像尺寸异常：${JSON.stringify(metrics.chatAvatar)}`)
-    if (!metrics.personAvatar || Math.round(metrics.personAvatar.width) !== 22 || Math.round(metrics.personAvatar.height) !== 22) throw new Error(`参与者头像尺寸异常：${JSON.stringify(metrics.personAvatar)}`)
-    if (!metrics.bubble || metrics.bubble.display !== 'block' || metrics.bubble.overflowWrap === 'normal') throw new Error(`消息气泡样式异常：${JSON.stringify(metrics.bubble)}`)
-    if (metrics.scrollWidth > metrics.bodyWidth + 1) throw new Error(`页面横向溢出：${JSON.stringify(metrics)}`)
+    if (id === 'community.github.tracememo.paperdaily') {
+      if (!details.avatar || Math.round(details.avatar.width) !== 34 || Math.round(details.avatar.height) !== 34) throw new Error(`重要消息头像尺寸异常：${JSON.stringify(details.avatar)}`)
+      if (!details.chatAvatar || Math.round(details.chatAvatar.width) !== 34 || Math.round(details.chatAvatar.height) !== 34) throw new Error(`对话头像尺寸异常：${JSON.stringify(details.chatAvatar)}`)
+      if (!details.personAvatar || Math.round(details.personAvatar.width) !== 22 || Math.round(details.personAvatar.height) !== 22) throw new Error(`参与者头像尺寸异常：${JSON.stringify(details.personAvatar)}`)
+      if (!details.bubble || details.bubble.display !== 'block' || details.bubble.overflowWrap === 'normal') throw new Error(`消息气泡样式异常：${JSON.stringify(details.bubble)}`)
+    }
+    const metrics = { desktop, mobile, details }
+    const png = fs.readFileSync(exported.pngPath)
+    if (png.readUInt32BE(16) !== manifest.capture.width) throw new Error(`导出 PNG 宽度不匹配：${png.readUInt32BE(16)}`)
+    fs.copyFileSync(exported.pngPath, path.join(sourceDir, manifest.preview))
     fs.copyFileSync(exported.pngPath, path.join(root, 'previews', `${id}-${version}.png`))
     fs.writeFileSync(path.join(evidenceDir, 'metrics.json'), JSON.stringify({ id, version, installed: installed.template, export: exported, metrics }, null, 2) + '\n')
     await exportedPage.close()

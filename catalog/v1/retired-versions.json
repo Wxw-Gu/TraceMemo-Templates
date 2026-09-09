@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1",
+  "templates": {
+    "community.github.wxw-gu.neon-command-daily": {
+      "1.0.0": {
+        "reason": "该版本包含不被 TraceMemo 安装器允许的 aside 标签；由 1.0.1 替代，禁止再次发布。"
+      }
+    }
+  }
+}

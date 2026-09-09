@@ -1,0 +1,14 @@
+{
+  "protocolVersion": "1.0",
+  "kind": "daily-report",
+  "id": "community.github.wxw-gu.neon-command-daily",
+  "name": "霓光指挥日报",
+  "author": { "name": "Wxw-Gu" },
+  "templateVersion": "1.0.1",
+  "interfaceVersion": "1",
+  "entry": "template.html",
+  "preview": "preview.png",
+  "capture": { "width": 1000, "maxWidth": 1000, "maxHeight": 20000 },
+  "license": { "spdx": "MIT", "notice": "原创社区模板；hero 图片由 OpenAI 图像生成工具创建，可随本模板按 MIT 分发。" },
+  "platform": "desktop"
+}

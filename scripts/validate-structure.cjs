@@ -9,11 +9,15 @@ const repo = 'Wxw-Gu/TraceMemo-Templates'
 const semverPattern = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
 const templateIdPattern = /^community\.github\.[a-z0-9-]+\.[a-z0-9-]+$/
 const placeholderKinds = {
-  text: new Set(['REPORT_TITLE','REPORT_DATE','GROUP_NAME','DATE_RANGE','RECORD_NOTE','OVERVIEW','HERO_HEADLINE','HERO_SUMMARY','HERO_TAKEAWAY','HERO_PENDING','HERO_STATUS_LINE','MESSAGE_COUNT','ACTIVE_USERS','TIME_SPAN','TOPIC_COUNT','MEDIA_COUNT','CONCLUSION_COUNT','TODO_COUNT','UNRESOLVED_COUNT','GENERATED_AT','FOOTER_NOTE','TEMPLATE_LABEL','TEMPLATE_NAME']),
-  html: new Set(['HERO_AVATARS','TOPIC_CARDS','IMPORTANT_MESSAGES','QUOTE_BLOCKS','QA_CARDS','RESOURCE_ITEMS','TODO_CARDS','UNRESOLVED_CARDS','TOPICS_MORE_NOTE','MESSAGES_MORE_NOTE']),
-  class: new Set(['TEMPLATE_CLASS','REPORT_MODE_CLASS','HERO_AVATAR_CLASS','HERO_STATUS_EMPTY_CLASS','HERO_TAKEAWAY_EMPTY_CLASS','HERO_PENDING_EMPTY_CLASS','TOPICS_EMPTY_CLASS','MESSAGES_EMPTY_CLASS','QUOTES_EMPTY_CLASS','ACTIONS_EMPTY_CLASS','QA_EMPTY_CLASS'])
+  text: new Set(['REPORT_TITLE','REPORT_DATE','GROUP_NAME','DATE_RANGE','RECORD_NOTE','OVERVIEW','HERO_HEADLINE','HERO_SUMMARY','HERO_TAKEAWAY','HERO_PENDING','HERO_STATUS_LINE','MESSAGE_COUNT','ACTIVE_USERS','TIME_SPAN','TOPIC_COUNT','MEDIA_COUNT','CONCLUSION_COUNT','TODO_COUNT','UNRESOLVED_COUNT','ACTIVITY_TIMELINE','GENERATED_AT','FOOTER_NOTE','TEMPLATE_LABEL','TEMPLATE_NAME']),
+  html: new Set(['HERO_AVATARS','TOPIC_CARDS','IMPORTANT_MESSAGES','QUOTE_BLOCKS','QA_CARDS','RESOURCE_ITEMS','TODO_CARDS','UNRESOLVED_CARDS','STORYLINE_CARDS','REVERSAL_CARDS','CHAIN_CARDS','VISION_CARDS','VOICE_CARDS','VOICE_RANK_CARDS','BADGE_CARDS','RANK_ITEMS','HEAT_BARS','CLOUD_TAGS','TOPICS_MORE_NOTE','MESSAGES_MORE_NOTE','QUOTES_MORE_NOTE','ACTIONS_MORE_NOTE','QA_MORE_NOTE','RESOURCES_MORE_NOTE','STORYLINES_MORE_NOTE','REVERSALS_MORE_NOTE','CHAINS_MORE_NOTE','VISION_MORE_NOTE','VOICE_MORE_NOTE','VOICE_RANK_MORE_NOTE','BADGES_MORE_NOTE','KEYWORDS_MORE_NOTE']),
+  class: new Set(['TEMPLATE_CLASS','REPORT_MODE_CLASS','HERO_AVATAR_CLASS','HERO_STATUS_EMPTY_CLASS','HERO_TAKEAWAY_EMPTY_CLASS','HERO_PENDING_EMPTY_CLASS','TOPICS_EMPTY_CLASS','MESSAGES_EMPTY_CLASS','QUOTES_EMPTY_CLASS','ACTIONS_EMPTY_CLASS','QA_EMPTY_CLASS','RESOURCES_EMPTY_CLASS','STORYLINES_EMPTY_CLASS','REVERSALS_EMPTY_CLASS','CHAINS_EMPTY_CLASS','VISION_EMPTY_CLASS','VOICE_EMPTY_CLASS','VOICE_RANK_EMPTY_CLASS','BADGES_EMPTY_CLASS','KEYWORDS_EMPTY_CLASS','ANALYTICS_EMPTY_CLASS','TODO_EMPTY_CLASS','UNRESOLVED_EMPTY_CLASS'])
 }
 const allPlaceholders = new Map(Object.entries(placeholderKinds).flatMap(([kind, keys]) => [...keys].map((key) => [key, kind])))
+const allowedTags = new Set(['html','head','body','meta','title','style','main','section','article','header','footer','div','span','p','h1','h2','h3','h4','b','strong','em','i','small','ul','ol','li','table','thead','tbody','tr','th','td','img','br'])
+const allowedAttrs = new Set(['class','id','title','aria-hidden','aria-label','alt','width','height','role','content','charset','name','src'])
+const allowedAssetExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp'])
+const retiredVersionsPath = path.join(root, 'catalog', 'v1', 'retired-versions.json')
 
 const compareVersions = (left, right) => {
   const parse = (value) => value.split('-')[0].split('.').map(Number)
@@ -50,6 +54,73 @@ const sourceTemplates = () => {
 
 const safeRelativePath = (value) => typeof value === 'string' && value.length > 0 &&
   !path.isAbsolute(value) && !value.split(/[\\/]/).includes('..') && !value.includes('\\')
+
+const retiredVersions = () => {
+  if (!fs.existsSync(retiredVersionsPath)) return new Set()
+  const retired = JSON.parse(fs.readFileSync(retiredVersionsPath, 'utf8'))
+  if (retired.schemaVersion !== '1' || !retired.templates || typeof retired.templates !== 'object') {
+    throw new Error('catalog/v1/retired-versions.json: 格式不正确')
+  }
+  const versions = new Set()
+  for (const [id, entries] of Object.entries(retired.templates)) {
+    if (!templateIdPattern.test(id) || !entries || typeof entries !== 'object' || Array.isArray(entries)) {
+      throw new Error(`catalog/v1/retired-versions.json: 无效模板 ${id}`)
+    }
+    for (const [version, detail] of Object.entries(entries)) {
+      if (!semverPattern.test(version) || !detail || typeof detail !== 'object' || typeof detail.reason !== 'string' || !detail.reason.trim()) {
+        throw new Error(`catalog/v1/retired-versions.json: ${id}@${version} 缺少撤回原因`)
+      }
+      versions.add(`${id}@${version}`)
+    }
+  }
+  return versions
+}
+
+const validateTemplateHtml = (html, fileName) => {
+  const placeholders = [...html.matchAll(/\{\{([A-Z0-9_]+)\}\}/g)].map((match) => match[1])
+  for (const key of placeholders) {
+    if (!allPlaceholders.has(key)) throw new Error(`${fileName}: 未知占位符 ${key}`)
+  }
+
+  const tagPattern = /<\/?([A-Za-z][A-Za-z0-9-]*)([^<>]*)>/g
+  for (const match of html.matchAll(tagPattern)) {
+    const tag = match[1].toLowerCase()
+    const source = match[0]
+    if (!allowedTags.has(tag)) throw new Error(`${fileName}: 不允许标签 <${tag}>`)
+    if (source.startsWith('</')) continue
+    const attrs = match[2] || ''
+    const attrPattern = /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
+    for (const attr of attrs.matchAll(attrPattern)) {
+      const name = attr[1].toLowerCase()
+      const value = attr[2] ?? attr[3] ?? attr[4] ?? ''
+      // parseFragment 会忽略完整文档的 html/head/body 包装属性；保留 lang 以免静态目录校验误拒绝这些包装标签。
+      if (!allowedAttrs.has(name) && !(tag === 'html' && name === 'lang') || name.startsWith('on')) {
+        throw new Error(`${fileName}: 不允许属性 ${name}`)
+      }
+      if (/\{\{[A-Z0-9_]+\}\}/.test(value)) {
+        const keys = [...value.matchAll(/\{\{([A-Z0-9_]+)\}\}/g)].map((placeholder) => placeholder[1])
+        if (name !== 'class' || keys.some((key) => allPlaceholders.get(key) !== 'class')) {
+          throw new Error(`${fileName}: 占位符不能出现在 ${name} 属性中`)
+        }
+      }
+      if (name === 'src') {
+        const assetPath = path.posix.normalize(value.replace(/\\/g, '/'))
+        if (!assetPath.startsWith('assets/') || !allowedAssetExtensions.has(path.posix.extname(assetPath).toLowerCase())) {
+          throw new Error(`${fileName}: src 只允许 assets/ 下的 PNG/JPEG/WebP`)
+        }
+      }
+    }
+  }
+
+  for (const match of html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)) {
+    const css = match[1]
+    if (/\{\{[A-Z0-9_]+\}\}/.test(css)) throw new Error(`${fileName}: 占位符不能出现在 style 中`)
+    if (/@import\b/i.test(css)) throw new Error(`${fileName}: 不允许 CSS @import`)
+    if (/url\(\s*['"]?\s*(?:https?:|file:|data:|javascript:)/i.test(css)) {
+      throw new Error(`${fileName}: CSS 包含危险资源 URL`)
+    }
+  }
+}
 
 const sourceFilesInAssets = (templateDir) => {
   const assetsDir = path.join(templateDir, 'assets')
@@ -125,8 +196,7 @@ const validateTemplate = (id, version) => {
   if (!safeRelativePath(manifest.entry) || !fs.existsSync(path.join(dir, manifest.entry))) throw new Error(`${id}@${version}: 缺少入口文件`)
   if (!safeRelativePath(manifest.preview) || !fs.existsSync(path.join(dir, manifest.preview))) throw new Error(`${id}@${version}: 缺少预览图`)
   const html = fs.readFileSync(path.join(dir, manifest.entry), 'utf8')
-  for (const [, key] of html.matchAll(/\{\{([A-Z0-9_]+)\}\}/g)) if (!allPlaceholders.has(key)) throw new Error(`${id}@${version}: 未知占位符 ${key}`)
-  if (/<script\b|\s+on[a-z]+\s*=|<iframe\b|@import\b|https?:\/\//i.test(html)) throw new Error(`${id}@${version}: 含不允许的脚本或外链`)
+  validateTemplateHtml(html, `${id}@${version}/${manifest.entry}`)
   const previewName = previewNameFor(id, version)
   const packagePath = validatePackage(id, version, dir, manifest)
   return { manifest, packagePath, previewName }
@@ -134,8 +204,14 @@ const validateTemplate = (id, version) => {
 
 const manifests = new Map()
 const discoveredTemplates = sourceTemplates()
+const retired = retiredVersions()
+const validateRetired = process.env.VALIDATE_RETIRED === '1'
 for (const { id, versions } of discoveredTemplates) {
-  for (const version of versions) manifests.set(`${id}@${version}`, validateTemplate(id, version))
+  for (const version of versions) {
+    const key = `${id}@${version}`
+    if (retired.has(key) && !validateRetired) continue
+    manifests.set(key, validateTemplate(id, version))
+  }
 }
 
 const validateCatalog = (source, catalog, expectedStatus) => {
@@ -150,6 +226,7 @@ const validateCatalog = (source, catalog, expectedStatus) => {
     if (entry.status !== expectedStatus) throw new Error(`${entry.id}: 目录状态不是 ${expectedStatus}`)
     const sourceTemplate = manifests.get(`${entry.id}@${entry.version}`)
     if (!sourceTemplate) throw new Error(`${source}: ${entry.id}@${entry.version} 不存在于模板源码`)
+    if (retired.has(`${entry.id}@${entry.version}`)) throw new Error(`${source}: ${entry.id}@${entry.version} 已撤回，不能出现在 catalog`)
     const { manifest, packagePath, previewName } = sourceTemplate
     if (entry.interfaceVersion !== manifest.interfaceVersion || entry.version !== manifest.templateVersion) throw new Error(`${entry.id}: 目录版本或接口版本不匹配`)
     const stat = fs.statSync(packagePath)
@@ -168,4 +245,4 @@ if (process.argv.includes('--catalog')) {
   validateCatalog('正式目录', published, 'published')
 }
 
-console.log(`validated ${discoveredTemplates.length} templates across ${[...manifests.keys()].length} versions${process.argv.includes('--catalog') ? ' and catalog' : ''}`)
+console.log(`validated ${discoveredTemplates.length} templates across ${[...manifests.keys()].length} versions${retired.size && !validateRetired ? ` (${retired.size} retired skipped)` : ''}${process.argv.includes('--catalog') ? ' and catalog' : ''}`)

@@ -24,6 +24,16 @@ if (publishMetadata.schemaVersion !== '1' || !publishMetadata.templates || typeo
   throw new Error('catalog/v1/publish-metadata.json: 元数据格式不正确')
 }
 
+const retiredVersionsPath = path.join(root, 'catalog', 'v1', 'retired-versions.json')
+const retiredVersions = fs.existsSync(retiredVersionsPath)
+  ? JSON.parse(fs.readFileSync(retiredVersionsPath, 'utf8'))
+  : { schemaVersion: '1', templates: {} }
+if (retiredVersions.schemaVersion !== '1' || !retiredVersions.templates || typeof retiredVersions.templates !== 'object') {
+  throw new Error('catalog/v1/retired-versions.json: 格式不正确')
+}
+
+const isRetired = (id, version) => Boolean(retiredVersions.templates[id]?.[version])
+
 const metadataFor = (id) => {
   const metadata = publishMetadata.templates[id]
   if (!metadata || !semverPattern.test(metadata.version) || typeof metadata.description !== 'string' || !metadata.description.trim() ||
@@ -45,6 +55,7 @@ const discoverTemplateIds = () => {
 }
 
 const publishableTemplate = ({ id, version }) => {
+  if (isRetired(id, version)) throw new Error(`${id}@${version}: 已撤回版本不能进入 catalog`)
   const templateDir = path.join(root, 'templates', id, version)
   const manifestPath = path.join(templateDir, 'manifest.json')
   if (!fs.existsSync(manifestPath)) throw new Error(`${id}@${version}: 缺少 manifest.json`)
