@@ -1,9 +1,9 @@
 {
   "schemaVersion": "1",
-  "generatedAt": "2026-09-08T10:28:28.823Z",
+  "generatedAt": "2026-09-09T01:46:14.108Z",
   "source": {
     "repository": "Wxw-Gu/TraceMemo-Templates",
-    "commit": "4c7e83f4812e6d7c6557d3bea8d023326bf5b826"
+    "commit": "bdbc338c96d69604a64e9c37678639ac7ff627d7"
   },
   "status": "published",
   "templates": [
@@ -21,11 +21,11 @@
       ],
       "license": "MIT",
       "minAppVersion": null,
-      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/packages/community.github.tracememo.paperdaily/1.0.1/community.github.tracememo.paperdaily-1.0.1.zip",
+      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/packages/community.github.tracememo.paperdaily/1.0.1/community.github.tracememo.paperdaily-1.0.1.zip",
       "sizeBytes": 123277,
       "sha256": "ff8e3361c325e0bc82b516d0988137b35b81e293c638a17a861ffe7b95cb0c56",
-      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/previews/community.github.tracememo.paperdaily-1.0.1.png",
-      "publishedAt": "2026-09-08T10:28:28.823Z",
+      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/previews/community.github.tracememo.paperdaily-1.0.1.png",
+      "publishedAt": "2026-09-09T01:46:14.108Z",
       "status": "published"
     },
     {
@@ -42,11 +42,11 @@
       ],
       "license": "MIT",
       "minAppVersion": null,
-      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/packages/community.github.tracememo.quickread/1.0.0/community.github.tracememo.quickread-1.0.0.zip",
+      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/packages/community.github.tracememo.quickread/1.0.0/community.github.tracememo.quickread-1.0.0.zip",
       "sizeBytes": 171454,
       "sha256": "19d61c5c68080e84ef7331305814d19c072a1cf4fe52f8846ffb8b41742efb94",
-      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/previews/community.github.tracememo.quickread.png",
-      "publishedAt": "2026-09-08T10:28:28.823Z",
+      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/previews/community.github.tracememo.quickread.png",
+      "publishedAt": "2026-09-09T01:46:14.108Z",
       "status": "published"
     },
     {
@@ -64,11 +64,11 @@
       ],
       "license": "MIT",
       "minAppVersion": null,
-      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/packages/community.github.tracememo.teamboard/1.0.0/community.github.tracememo.teamboard-1.0.0.zip",
+      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/packages/community.github.tracememo.teamboard/1.0.0/community.github.tracememo.teamboard-1.0.0.zip",
       "sizeBytes": 198250,
       "sha256": "23a03f8af654fef9434961f4fcb3d7269c4479f402e9ce2318cfd9b5595b193b",
-      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/previews/community.github.tracememo.teamboard.png",
-      "publishedAt": "2026-09-08T10:28:28.823Z",
+      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/previews/community.github.tracememo.teamboard.png",
+      "publishedAt": "2026-09-09T01:46:14.108Z",
       "status": "published"
     },
     {
@@ -86,16 +86,16 @@
       ],
       "license": "MIT",
       "minAppVersion": null,
-      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/packages/community.github.wxw-gu.mountain-daily/1.0.0/community.github.wxw-gu.mountain-daily-1.0.0.zip",
+      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/packages/community.github.wxw-gu.mountain-daily/1.0.0/community.github.wxw-gu.mountain-daily-1.0.0.zip",
       "sizeBytes": 369791,
       "sha256": "e91b03f5d15d01b718e3fdbe41959b350edbddfb45ddd399de9057e7e1329d83",
-      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/previews/community.github.wxw-gu.mountain-daily-1.0.0.png",
-      "publishedAt": "2026-09-08T10:28:28.823Z",
+      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/previews/community.github.wxw-gu.mountain-daily-1.0.0.png",
+      "publishedAt": "2026-09-09T01:46:14.108Z",
       "status": "published"
     },
     {
       "id": "community.github.wxw-gu.neon-command-daily",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "interfaceVersion": "1",
       "name": "霓光指挥日报",
       "description": "霓光主题的桌面指挥日报，突出实时讨论、重点消息与行动项。",
@@ -108,11 +108,11 @@
       ],
       "license": "MIT",
       "minAppVersion": null,
-      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/packages/community.github.wxw-gu.neon-command-daily/1.0.0/community.github.wxw-gu.neon-command-daily-1.0.0.zip",
-      "sizeBytes": 1103269,
-      "sha256": "c1b7c21a6e67f5fff8c8e2a1f21e7830cc98417154c4c8a3092fd5c02d224eab",
-      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/4c7e83f4812e6d7c6557d3bea8d023326bf5b826/previews/community.github.wxw-gu.neon-command-daily-1.0.0.png",
-      "publishedAt": "2026-09-08T10:28:28.823Z",
+      "download": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/packages/community.github.wxw-gu.neon-command-daily/1.0.1/community.github.wxw-gu.neon-command-daily-1.0.1.zip",
+      "sizeBytes": 803568,
+      "sha256": "0e6b87b2d01e24fa7994eec131ae23eab8566cbc2eeafcf9530e3f3e942103f2",
+      "preview": "https://raw.githubusercontent.com/Wxw-Gu/TraceMemo-Templates/bdbc338c96d69604a64e9c37678639ac7ff627d7/previews/community.github.wxw-gu.neon-command-daily-1.0.1.png",
+      "publishedAt": "2026-09-09T01:46:14.108Z",
       "status": "published"
     }
   ]
