@@ -8,7 +8,8 @@
 4. 只使用 TraceMemo 已公布的占位符。text、html、class 三类占位符不能混用；不要把占位符放进 `style`、URL、事件属性或未知标签。
 5. `market.json` 只包含简短的 `description` 与 `tags`，用于市场展示；它不是 TraceMemo manifest，不进入安装 ZIP，也不能包含 HTML、脚本或 URL。
 6. 禁止 JavaScript、iframe、外链、表单、事件属性、CSS `@import` 和读取模板目录外文件。图片只能是包内 PNG/JPEG/WebP。
-7. 同时检查完整数据、缺少可选模块、长中文/数字/HTML 特殊字符三类 fixture；不要上传真实聊天记录、头像、日报或 API Key。
+7. 同时检查完整数据、缺少可选模块、长中文/数字/HTML 特殊字符三类 fixture；宽泛 `img { width: ... }` 等规则会得到风险警告，生产头像仍受 contract 保护；不要上传真实聊天记录、头像、日报或 API Key。
+8. Preview 不等于完成。必须用 TraceMemo production renderer 检查 `tm-*` fragment contract：普通与 fallback 头像、长昵称、时间、正文、1000px/430px、包内资源和完整 PNG。详见 [Fragment UI Contract](docs/fragment-ui-contract.md)；不要自己臆造 message/avatar DOM。
 
 ## 本地检查
 
@@ -20,6 +21,7 @@ node scripts/render-previews.cjs
 node scripts/build-packages.cjs
 CATALOG_COMMIT=<40-char-commit> node scripts/generate-catalog.cjs
 node scripts/validate-structure.cjs --catalog
+TRACEMEMO_ROOT=../TraceMemo node scripts/validate-production-fragments.cjs
 ```
 
 投稿 CI 只读取源码并执行固定仓库工具，不运行投稿模板中的脚本或安装命令。安全安装和真实 PNG 导出由维护者在固定 TraceMemo 版本、临时数据目录和虚构数据中完成。

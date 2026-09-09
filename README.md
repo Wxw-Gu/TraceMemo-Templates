@@ -222,6 +222,7 @@ templates/<id>/<version>/      模板可编辑源码
 packages/<id>/<version>/       可安装模板 ZIP
 previews/                      模板市场与审核使用的预览 PNG
 fixtures/                      虚构日报测试数据
+docs/fragment-ui-contract.md   生产 fragment 的稳定 UI contract
 skills/                        AI 模板制作与投稿 Skill
 catalog/v1/index.json          TraceMemo 正式模板市场目录
 catalog/v1/drafts/             发布与审核流程使用的草稿目录

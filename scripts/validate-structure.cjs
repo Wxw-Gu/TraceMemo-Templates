@@ -150,6 +150,9 @@ const validateTemplateHtml = (html, fileName) => {
     if (/url\(\s*['"]?\s*(?:https?:|file:|data:|javascript:)/i.test(css)) {
       throw new Error(`${fileName}: CSS 包含危险资源 URL`)
     }
+    if (/(?:^|[;}\n])\s*(?:\*|img|[A-Za-z][\w-]*(?:\s+[A-Za-z][\w-]*)*\s+img)\s*\{[^}]*\b(?:width|height)\s*:/i.test(css)) {
+      console.warn(`${fileName}: 警告：宽泛图片尺寸 selector 可能误伤模板插图；production avatar 会受 contract 保护，但请优先使用语义 selector`)
+    }
   }
 }
 

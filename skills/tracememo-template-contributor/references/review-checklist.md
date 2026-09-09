@@ -28,6 +28,8 @@
 - [ ] 在目标手机宽度实际检查过：头像与图片消息没有混淆，消息可换行且没有横向溢出。
 - [ ] 重要消息、引语、话题、问答、行动项和未解决项与实际可用占位符一一对应。
 - [ ] preview 实际打开检查过，宽度符合 capture，页面没有裁切、重叠、不可读文本或异常空白。
+- [ ] 已使用 TraceMemo production fragment contract，而非手写 mock DOM；普通头像、fallback、昵称、timestamp、正文在 1000px 与 430px 的 bounding box 和完整 PNG 均已检查。
+- [ ] 已确认 production avatar 不会受宽泛 `img` selector 放大，包内 assets 无 broken image 或外部网络请求。
 
 ## 验证和交付
 

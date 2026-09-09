@@ -31,6 +31,8 @@ description: 将日报截图、设计稿、HTML/CSS、React/Vue 页面或现有�
 
 聊天内容必须实际验收，不以 PNG 文件存在为准：在桌面和目标手机宽度检查小尺寸头像、昵称、时间、气泡/正文、长昵称、长消息、多条和多人消息、无头像 fallback、换行、横向溢出，以及图片消息不会被当作头像。完成后实际查看生成的 preview。
 
+Preview 不等于完成。投稿前必须通过 Production Fragment Preview：读取当前 [Fragment UI Contract](../../docs/fragment-ui-contract.md) 和 `scripts/validate-production-fragments.cjs`，使用 TraceMemo 真实 renderer 生成 fragment，不要根据想象重写 message/avatar DOM。逐项检查普通头像、fallback avatar、昵称、timestamp、正文、1000px、430px、包内 assets 与完整 PNG；只有这些都通过后再进入提交流程。
+
 ### Preview → Iterate
 
 先查找仓库当前是否明确公布了 Template Preview / Submission Service。若有，读取它的当前文档和配置并优先使用；不要在此 Skill 中写死 endpoint 或 schema。
