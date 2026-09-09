@@ -16,4 +16,4 @@
 
 不要因此放弃模板制作。交付 PR-ready 工作树、可审查 preview、验证证据，并给出 PR title 和 description；只说明完成投稿所需的最短一步（例如登录 `gh` 或在 GitHub 网页 fork 后开 PR）。
 
-建议 PR title 为 `feat: 新增 <模板名称> 日报模板`。PR description 至少写明模板名称、template ID、version、设计来源、输入类型（screenshot / HTML / React / Vue / text）、主要视觉结构、TraceMemo 映射及未迁移部分、validator 结果、preview、虚构数据声明和未使用真实聊天数据声明。不要修改正式 catalog、其他作者模板或已发布版本。
+建议 PR title 为 `feat: 新增 <模板名称> 日报模板`。PR description 至少写明模板名称、template ID、version、设计来源、输入类型（screenshot / HTML / React / Vue / text）、主要视觉结构、TraceMemo 映射及未迁移部分、validator 结果、preview、虚构数据声明和未使用真实聊天数据声明。不要修改正式 catalog、草稿 catalog、`publish-metadata.json`、其他作者模板或已发布版本。PR 合并后由仓库自动发布流程决定是否上架；Contributor 不负责该决定。

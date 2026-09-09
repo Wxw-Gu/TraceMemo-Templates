@@ -36,11 +36,25 @@ const isRetired = (id, version) => Boolean(retiredVersions.templates[id]?.[versi
 
 const metadataFor = (id) => {
   const metadata = publishMetadata.templates[id]
-  if (!metadata || !semverPattern.test(metadata.version) || typeof metadata.description !== 'string' || !metadata.description.trim() ||
-    !Array.isArray(metadata.tags) || metadata.tags.length === 0 || metadata.tags.some((tag) => typeof tag !== 'string' || !tag.trim())) {
-    throw new Error(`${id}: 缺少有效的 catalog version、description 或 tags 元数据`)
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata) || !semverPattern.test(metadata.version) ||
+    Object.keys(metadata).some((key) => key !== 'version')) {
+    throw new Error(`${id}: publish-metadata 只能声明有效的 version`)
   }
-  return { version: metadata.version, description: metadata.description, tags: metadata.tags }
+  return { version: metadata.version }
+}
+
+const marketFor = (id, version, templateDir) => {
+  const marketPath = path.join(templateDir, 'market.json')
+  if (!fs.existsSync(marketPath)) throw new Error(`${id}@${version}: 缺少 market.json`)
+  const market = JSON.parse(fs.readFileSync(marketPath, 'utf8'))
+  const invalidText = (value, maxLength) => typeof value !== 'string' || !value.trim() || value.length > maxLength ||
+    /[<>]/.test(value) || /\b(?:javascript|data):/i.test(value)
+  if (!market || typeof market !== 'object' || Array.isArray(market) || Object.keys(market).some((key) => !['description', 'tags'].includes(key)) ||
+    invalidText(market.description, 160) || !Array.isArray(market.tags) || market.tags.length === 0 || market.tags.length > 8 ||
+    market.tags.some((tag) => invalidText(tag, 24)) || new Set(market.tags.map((tag) => tag.trim())).size !== market.tags.length) {
+    throw new Error(`${id}@${version}: market.json 的 description 或 tags 不合法`)
+  }
+  return { description: market.description.trim(), tags: market.tags.map((tag) => tag.trim()) }
 }
 
 const discoverTemplateIds = () => {
@@ -78,7 +92,7 @@ const publishableTemplate = ({ id, version }) => {
   const previewCandidates = [`${id}-${version}.png`, `${id}.png`]
   const previewName = previewCandidates.find((name) => fs.existsSync(path.join(root, 'previews', name)))
   if (!previewName) throw new Error(`${id}@${version}: 缺少市场预览图`)
-  return { id, version, manifest, packagePath, previewName, metadata: metadataFor(id) }
+  return { id, version, manifest, packagePath, previewName, market: marketFor(id, version, templateDir) }
 }
 
 const discoveredTemplateIds = discoverTemplateIds()
@@ -90,17 +104,17 @@ const current = Object.keys(publishMetadata.templates)
     return publishableTemplate({ id, version: metadata.version })
   })
 
-const buildEntries = (status) => current.map(({ id, version, manifest, packagePath, previewName, metadata }) => {
+const buildEntries = (status) => current.map(({ id, version, manifest, packagePath, previewName, market }) => {
   const bytes = fs.readFileSync(packagePath)
   return {
     id: manifest.id,
     version: manifest.templateVersion,
     interfaceVersion: manifest.interfaceVersion,
     name: manifest.name,
-    description: metadata.description,
+    description: market.description,
     author: manifest.author.name,
     platform: manifest.platform,
-    tags: metadata.tags,
+    tags: market.tags,
     license: manifest.license.spdx,
     minAppVersion: manifest.minAppVersion || null,
     download: `https://raw.githubusercontent.com/${repo}/${commit}/packages/${id}/${version}/${id}-${version}.zip`,

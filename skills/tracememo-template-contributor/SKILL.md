@@ -23,7 +23,7 @@ description: 将日报截图、设计稿、HTML/CSS、React/Vue 页面或现有�
 
 ### Build → Validate
 
-在 `templates/<id>/<version>/` 生成当前规范要求的 `manifest.json`、`template.html` 和必要的包内 `assets/`。优先保留原设计的布局、色彩、卡片关系、字体层级、信息密度及对应的移动端/桌面端特征，而不是为方便转换改成另一套普通模板。
+在 `templates/<id>/<version>/` 生成当前规范要求的 `manifest.json`、`template.html`、`market.json` 和必要的包内 `assets/`。`market.json` 仅填写简短 `description` 与 `tags`，用于市场展示；它不进入安装 ZIP，也不属于 TraceMemo manifest 协议。优先保留原设计的布局、色彩、卡片关系、字体层级、信息密度及对应的移动端/桌面端特征，而不是为方便转换改成另一套普通模板。
 
 只使用当前公布的占位符和静态 HTML/CSS。移除不支持能力；对不能一比一迁移的内容，清楚写出差异并采用最接近的展示方案。
 
@@ -41,7 +41,7 @@ description: 将日报截图、设计稿、HTML/CSS、React/Vue 页面或现有�
 
 用户明确说“满意”“提交审核”“帮我提 PR”时进入投稿。若用户一开始已明确说“做好后直接提交 PR”或“完成后帮我提 PR”，GitHub 写操作已预授权：仍必须完成 Build → Validate → Preview，并由 AI 实际检查、修复明显问题，但无需在最后重复询问是否创建 PR。先阅读 [references/submission-fallback.md](references/submission-fallback.md)。没有官方服务时，GitHub 是 submission fallback：有源仓库写权限时推送独立分支并向 `main` 提 PR；无写权限但已登录 GitHub 时 fork 后提 PR；没有 GitHub 写能力时仍交付 PR-ready 变更、预览、标题和描述以及最短下一步。
 
-绝不直接或 force push `main`，不自行修改正式 catalog，不覆盖已发布版本，也不上传真实聊天数据、头像、密钥或 AI 工作日志。
+绝不直接或 force push `main`，不自行修改正式 catalog、草稿 catalog 或 `publish-metadata.json`，不覆盖已发布版本，也不上传真实聊天数据、头像、密钥或 AI 工作日志。投稿合并后的正式发布由仓库自动化处理；Contributor 只负责制作、验证、预览和 PR。
 
 ## 输出要求
 

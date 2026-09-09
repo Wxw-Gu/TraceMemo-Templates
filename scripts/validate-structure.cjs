@@ -18,6 +18,7 @@ const allowedTags = new Set(['html','head','body','meta','title','style','main',
 const allowedAttrs = new Set(['class','id','title','aria-hidden','aria-label','alt','width','height','role','content','charset','name','src'])
 const allowedAssetExtensions = new Set(['.png', '.jpg', '.jpeg', '.webp'])
 const retiredVersionsPath = path.join(root, 'catalog', 'v1', 'retired-versions.json')
+const publishMetadataPath = path.join(root, 'catalog', 'v1', 'publish-metadata.json')
 
 const compareVersions = (left, right) => {
   const parse = (value) => value.split('-')[0].split('.').map(Number)
@@ -74,6 +75,36 @@ const retiredVersions = () => {
     }
   }
   return versions
+}
+
+const validateMarket = (id, version, dir) => {
+  const marketPath = path.join(dir, 'market.json')
+  if (!fs.existsSync(marketPath)) throw new Error(`${id}@${version}: 缺少 market.json`)
+  const market = JSON.parse(fs.readFileSync(marketPath, 'utf8'))
+  const invalidText = (value, maxLength) => typeof value !== 'string' || !value.trim() || value.length > maxLength ||
+    /[<>]/.test(value) || /\b(?:javascript|data):/i.test(value)
+  if (!market || typeof market !== 'object' || Array.isArray(market) || Object.keys(market).some((key) => !['description', 'tags'].includes(key)) ||
+    invalidText(market.description, 160) || !Array.isArray(market.tags) || market.tags.length === 0 || market.tags.length > 8 ||
+    market.tags.some((tag) => invalidText(tag, 24)) || new Set(market.tags.map((tag) => tag.trim())).size !== market.tags.length) {
+    throw new Error(`${id}@${version}: market.json 的 description 或 tags 不合法`)
+  }
+  return { description: market.description.trim(), tags: market.tags.map((tag) => tag.trim()) }
+}
+
+const publishMetadata = () => {
+  const metadata = JSON.parse(fs.readFileSync(publishMetadataPath, 'utf8'))
+  if (metadata.schemaVersion !== '1' || !metadata.templates || typeof metadata.templates !== 'object' || Array.isArray(metadata.templates)) {
+    throw new Error('catalog/v1/publish-metadata.json: 格式不正确')
+  }
+  const templates = new Map()
+  for (const [id, entry] of Object.entries(metadata.templates)) {
+    if (!templateIdPattern.test(id) || !entry || typeof entry !== 'object' || Array.isArray(entry) || !semverPattern.test(entry.version) ||
+      Object.keys(entry).some((key) => key !== 'version')) {
+      throw new Error(`catalog/v1/publish-metadata.json: ${id} 必须只声明有效的 version`)
+    }
+    templates.set(id, entry.version)
+  }
+  return templates
 }
 
 const validateTemplateHtml = (html, fileName) => {
@@ -195,16 +226,18 @@ const validateTemplate = (id, version) => {
   if (manifest.templateVersion !== version || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(manifest.templateVersion)) throw new Error(`${id}@${version}: 版本不是 semver 或目录不一致`)
   if (!safeRelativePath(manifest.entry) || !fs.existsSync(path.join(dir, manifest.entry))) throw new Error(`${id}@${version}: 缺少入口文件`)
   if (!safeRelativePath(manifest.preview) || !fs.existsSync(path.join(dir, manifest.preview))) throw new Error(`${id}@${version}: 缺少预览图`)
+  const market = validateMarket(id, version, dir)
   const html = fs.readFileSync(path.join(dir, manifest.entry), 'utf8')
   validateTemplateHtml(html, `${id}@${version}/${manifest.entry}`)
   const previewName = previewNameFor(id, version)
   const packagePath = validatePackage(id, version, dir, manifest)
-  return { manifest, packagePath, previewName }
+  return { manifest, packagePath, previewName, market }
 }
 
 const manifests = new Map()
 const discoveredTemplates = sourceTemplates()
 const retired = retiredVersions()
+const publishedVersions = publishMetadata()
 const validateRetired = process.env.VALIDATE_RETIRED === '1'
 for (const { id, versions } of discoveredTemplates) {
   for (const version of versions) {
@@ -227,14 +260,25 @@ const validateCatalog = (source, catalog, expectedStatus) => {
     const sourceTemplate = manifests.get(`${entry.id}@${entry.version}`)
     if (!sourceTemplate) throw new Error(`${source}: ${entry.id}@${entry.version} 不存在于模板源码`)
     if (retired.has(`${entry.id}@${entry.version}`)) throw new Error(`${source}: ${entry.id}@${entry.version} 已撤回，不能出现在 catalog`)
-    const { manifest, packagePath, previewName } = sourceTemplate
+    const { manifest, packagePath, previewName, market } = sourceTemplate
     if (entry.interfaceVersion !== manifest.interfaceVersion || entry.version !== manifest.templateVersion) throw new Error(`${entry.id}: 目录版本或接口版本不匹配`)
+    if (entry.description !== market.description || JSON.stringify(entry.tags) !== JSON.stringify(market.tags)) throw new Error(`${entry.id}: 目录市场文案与 market.json 不一致`)
     const stat = fs.statSync(packagePath)
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex')
     if (entry.sha256 !== digest || entry.sizeBytes !== stat.size) throw new Error(`${entry.id}: 目录哈希或大小不一致`)
     const expectedDownload = `https://raw.githubusercontent.com/${repo}/${catalog.source.commit}/packages/${entry.id}/${entry.version}/${entry.id}-${entry.version}.zip`
     const expectedPreview = `https://raw.githubusercontent.com/${repo}/${catalog.source.commit}/previews/${previewName}`
     if (entry.download !== expectedDownload || entry.preview !== expectedPreview) throw new Error(`${entry.id}: 下载或预览 URL 没有固定到 source.commit`)
+  }
+  if (expectedStatus === 'published') {
+    if (seen.size !== publishedVersions.size) throw new Error(`${source}: 与 publish-metadata 的发布条目数量不一致`)
+    for (const [id, version] of publishedVersions) {
+      if (retired.has(`${id}@${version}`)) throw new Error(`${source}: ${id}@${version} 已撤回，不能发布`)
+      if (!manifests.has(`${id}@${version}`)) throw new Error(`${source}: ${id}@${version} 不存在于模板源码`)
+      if (!seen.has(id) || catalog.templates.find((entry) => entry.id === id)?.version !== version) {
+        throw new Error(`${source}: ${id}@${version} 与 publish-metadata 不一致`)
+      }
+    }
   }
 }
 

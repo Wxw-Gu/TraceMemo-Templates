@@ -1,0 +1,137 @@
+name: publish merged templates
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [closed]
+    paths:
+      - "templates/**"
+      - "packages/**"
+      - "previews/**"
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: tracememo-template-publish
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  publish:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read changed files from the merged pull request
+        id: changed-files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100
+            })
+            const output = require('node:path').join(process.env.RUNNER_TEMP, 'tracememo-publish-pr-files.json')
+            require('node:fs').writeFileSync(
+              output,
+              `${JSON.stringify({ files: files.map(({ filename, status }) => ({ filename, status })) }, null, 2)}\n`
+            )
+            core.setOutput('path', output)
+
+      - name: Keep source only when publication is held
+        if: contains(github.event.pull_request.labels.*.name, 'hold-publish')
+        run: echo "hold-publish is present; no catalog files will be changed."
+
+      - name: Reject non-template paths before checkout
+        if: "!contains(github.event.pull_request.labels.*.name, 'hold-publish')"
+        uses: actions/github-script@v7
+        env:
+          PR_FILES_PATH: ${{ steps.changed-files.outputs.path }}
+        with:
+          script: |
+            const fs = require('node:fs')
+            const files = JSON.parse(fs.readFileSync(process.env.PR_FILES_PATH, 'utf8')).files
+            const id = 'community\\.github\\.[a-z0-9-]+\\.[a-z0-9-]+'
+            const version = '\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?'
+            const template = new RegExp(`^templates/(${id})/(${version})/(?:manifest\\.json|template\\.html|preview\\.png|market\\.json|assets/.+)$`)
+            const packageFile = new RegExp(`^packages/(${id})/(${version})/\\1-\\2\\.zip$`)
+            const preview = new RegExp(`^previews/(${id})-(${version})\\.png$`)
+            const templateVersions = new Set()
+            const relatedVersions = []
+            const rejected = []
+            for (const { filename } of files) {
+              const templateMatch = template.exec(filename)
+              if (templateMatch) {
+                templateVersions.add(`${templateMatch[1]}@${templateMatch[2]}`)
+                continue
+              }
+              const relatedMatch = packageFile.exec(filename) || preview.exec(filename)
+              if (relatedMatch) {
+                relatedVersions.push(`${relatedMatch[1]}@${relatedMatch[2]}`)
+                continue
+              }
+              rejected.push(filename)
+            }
+            for (const target of relatedVersions) {
+              if (!templateVersions.has(target)) rejected.push(`${target}: package/preview 没有同一 PR 的模板源码`)
+            }
+            if (templateVersions.size === 0) rejected.push('未发现 templates/<id>/<version>/ 投稿源码')
+            if (rejected.length) core.setFailed(`拒绝自动发布：PR 包含非模板投稿路径：${rejected.join(', ')}`)
+
+      - name: Checkout merged main only after path validation
+        if: "!contains(github.event.pull_request.labels.*.name, 'hold-publish')"
+        # pull_request_target runs this workflow from the protected default branch.
+        # Never checkout the contributor's PR head in this write-token job.
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify merged source commit
+        if: "!contains(github.event.pull_request.labels.*.name, 'hold-publish')"
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          git fetch origin main
+          git checkout --detach origin/main
+          git cat-file -e "${MERGE_SHA}^{commit}"
+          git merge-base --is-ancestor "$MERGE_SHA" HEAD
+
+      - name: Resolve immutable artifact commit
+        if: "!contains(github.event.pull_request.labels.*.name, 'hold-publish')"
+        id: artifact-commit
+        run: |
+          if git show -s --format=%B HEAD | grep -qx "TraceMemo-Publish-Bot: true"; then
+            echo "sha=$(git rev-parse HEAD^)" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate and validate exact merged versions
+        if: "!contains(github.event.pull_request.labels.*.name, 'hold-publish')"
+        env:
+          CATALOG_COMMIT: ${{ steps.artifact-commit.outputs.sha }}
+        run: |
+          node scripts/publish-merged-templates.cjs \
+            --changed-files "${{ steps.changed-files.outputs.path }}" \
+            --catalog-commit "$CATALOG_COMMIT"
+          node scripts/validate-structure.cjs
+          node scripts/validate-structure.cjs --catalog
+          git diff --check
+
+      - name: Commit published catalog
+        if: "!contains(github.event.pull_request.labels.*.name, 'hold-publish')"
+        run: |
+          if git diff --quiet -- catalog/v1/publish-metadata.json catalog/v1/index.json catalog/v1/drafts/index.json; then
+            echo "No eligible template version entered this merge."
+            exit 0
+          fi
+          git config user.name "tracememo-template-bot"
+          git config user.email "tracememo-template-bot@users.noreply.github.com"
+          git add catalog/v1/publish-metadata.json catalog/v1/index.json catalog/v1/drafts/index.json
+          git diff --cached --check
+          git commit -m "chore: 发布社区模板" -m "TraceMemo-Publish-Bot: true"
+          git push origin HEAD:main

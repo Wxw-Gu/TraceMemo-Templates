@@ -2,12 +2,13 @@
 
 ## 制作规范
 
-1. 在 `templates/<template-id>/<version>/` 提供 `manifest.json`、`template.html`；需要图片时只放入包内 `assets/`。
+1. 在 `templates/<template-id>/<version>/` 提供 `manifest.json`、`template.html`、`market.json`；需要图片时只放入包内 `assets/`。
 2. ID 必须符合 `community.github.<作者>.<名称>`；版本使用三段 semver，不得使用 `builtin.` 命名空间。
 3. `protocolVersion`、`interfaceVersion` 和目标 TraceMemo 版本必须匹配。请在 PR 描述中写明对应的 TraceMemo commit 或已发布版本。
 4. 只使用 TraceMemo 已公布的占位符。text、html、class 三类占位符不能混用；不要把占位符放进 `style`、URL、事件属性或未知标签。
-5. 禁止 JavaScript、iframe、外链、表单、事件属性、CSS `@import` 和读取模板目录外文件。图片只能是包内 PNG/JPEG/WebP。
-6. 同时检查完整数据、缺少可选模块、长中文/数字/HTML 特殊字符三类 fixture；不要上传真实聊天记录、头像、日报或 API Key。
+5. `market.json` 只包含简短的 `description` 与 `tags`，用于市场展示；它不是 TraceMemo manifest，不进入安装 ZIP，也不能包含 HTML、脚本或 URL。
+6. 禁止 JavaScript、iframe、外链、表单、事件属性、CSS `@import` 和读取模板目录外文件。图片只能是包内 PNG/JPEG/WebP。
+7. 同时检查完整数据、缺少可选模块、长中文/数字/HTML 特殊字符三类 fixture；不要上传真实聊天记录、头像、日报或 API Key。
 
 ## 本地检查
 
@@ -34,7 +35,7 @@ CATALOG_COMMIT=<commit-A> CATALOG_PUBLISH=1 node scripts/generate-catalog.cjs
 node scripts/validate-structure.cjs --catalog
 ```
 
-`catalog/v1/publish-metadata.json` 是正式市场发布 allowlist，维护每个已发布模板的准确 `version`、`description` 和 `tags`，不属于 TraceMemo 模板 manifest 协议。generator 会动态发现模板源码，但只生成 metadata 明确声明的 ID 和版本；已合并却未声明在此文件中的模板或更高版本不会自动上架。每个被声明的版本都必须具备源码、安装包和市场预览，否则生成直接失败。
+`market.json` 保存每个模板版本的市场文案；`catalog/v1/publish-metadata.json` 是维护者控制的正式发布 allowlist，只声明当前正式版本。两者都不属于 TraceMemo 模板 manifest 协议。自动发布会在普通 PR 合并后写入 allowlist 并生成 catalog；`hold-publish` 标签会让合并只进入源码、不上架。每个待发布版本都必须具备 `market.json`、源码、安装包和市场预览，否则发布直接失败。
 
 正式目录的 `source.commit`、下载 URL、预览 URL、ZIP 大小和 SHA-256 必须固定到同一个源码/产物 commit。已发布版本不可覆盖；修改请增加新版本，并重新生成对应的安装包、预览和目录条目。
 
@@ -48,7 +49,7 @@ node scripts/validate-structure.cjs --catalog
 - 结构校验和目录哈希校验通过；
 - PR 描述包含目标 TraceMemo 版本、模板截图和必要的兼容说明。
 
-维护者会检查版式、安全边界、manifest/ZIP 一致性，并在固定 TraceMemo 版本中完成实际安装和渲染验收。通过后，条目才会从草稿目录进入 `catalog/v1/index.json`。
+维护者会检查版式、安全边界、manifest/ZIP 一致性，并在固定 TraceMemo 版本中完成实际安装和渲染验收。普通 PR 合并后会自动发布到模板市场；需要先合并源码、暂不上架时，请在合并前添加 `hold-publish` 标签。Contributor 不应修改 `catalog/v1/index.json`、`catalog/v1/drafts/index.json` 或 `catalog/v1/publish-metadata.json`。
 
 ## 许可
 

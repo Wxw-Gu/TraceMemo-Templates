@@ -43,7 +43,7 @@
 
 ## 4. 生成模板
 
-在 `templates/<id>/<version>/` 创建当前仓库要求的 `manifest.json`、`template.html` 和必要的 `assets/`。ID、版本、入口、协议和 capture 参数都从当前示例和 validator 推导，不要照抄旧版本的值。模板 HTML 应：
+在 `templates/<id>/<version>/` 创建当前仓库要求的 `manifest.json`、`template.html`、`market.json` 和必要的 `assets/`。`market.json` 只提供市场 description/tags，不进入安装 ZIP。ID、版本、入口、协议和 capture 参数都从当前示例和 validator 推导，不要照抄旧版本的值。模板 HTML 应：
 
 - 使用静态 HTML/CSS；占位符按当前定义的 text、html、class 类型放在允许的位置；
 - 对长中文、英文、数字和 HTML 特殊字符保留换行与溢出空间；

@@ -9,7 +9,7 @@
 ## 仓库规则
 
 - [ ] 已重新读取当前 `CONTRIBUTING.md`、validator、preview/build 脚本、fixture、manifest 示例和相关模板。
-- [ ] `templates/<id>/<version>/` 包含正确的 `manifest.json`、入口 HTML 和声明的包内资源。
+- [ ] `templates/<id>/<version>/` 包含正确的 `manifest.json`、入口 HTML、`market.json` 和声明的包内资源；`market.json` 不进入安装 ZIP。
 - [ ] ID、semver、协议、接口、entry、capture、license 与当前 validator/示例一致。
 - [ ] 使用的每个占位符都来自当前仓库；text、html、class 没有混用，也没有放进样式、URL、事件属性或未知标签。
 

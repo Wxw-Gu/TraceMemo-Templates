@@ -115,14 +115,13 @@ Pull Request 创建后，模板会进入社区审核流程。
 
 审核通过后，模板可以合并进入本仓库。
 
-完成正式发布后，其他 TraceMemo 用户就可以在模板市场中看到、安装并使用你的模板。
+普通模板合并后会自动正式发布，其他 TraceMemo 用户就可以在模板市场中看到、安装并使用你的模板。
 
 完整流程：
 
-**你的截图 / 项目 → AI 制作模板 → 真实预览 → 提交 PR → 社区审核 → 正式发布 → 其他用户安装使用**
+**你的截图 / 项目 → AI 制作模板 → 真实预览 → 提交 PR → 社区审核 → Merge 后自动发布 → 其他用户安装使用**
 
-> Pull Request 合并和正式上架是两个阶段。  
-> 模板只有完成正式发布后，才会出现在 TraceMemo 模板市场中。
+> 维护者可为特殊 PR 添加 `hold-publish`，使源码合并但暂不上架；普通投稿不需要关心这个内部流程。
 
 ---
 
@@ -134,6 +133,7 @@ Pull Request 创建后，模板会进入社区审核流程。
 | `community.github.tracememo.paperdaily`  | `1.0.1` | 纸上日报     | 手机报纸式编辑版，突出标题、话题和引语         |
 | `community.github.tracememo.teamboard`   | `1.0.0` | 团队看板     | 桌面宽屏多栏看板，适合团队复盘和归档           |
 | `community.github.wxw-gu.mountain-daily` | `1.0.0` | 山水协作日报 | 山水主题桌面协作日报，适合整理多人讨论与行动项 |
+| `community.github.wxw-gu.neon-command-daily` | `1.0.2` | 霓光指挥日报 | 霓光主题桌面指挥日报，突出讨论、重点消息与行动项 |
 
 所有正式模板都会提供：
 
@@ -226,18 +226,13 @@ skills/                        AI 模板制作与投稿 Skill
 catalog/v1/index.json          TraceMemo 正式模板市场目录
 catalog/v1/drafts/             发布与审核流程使用的草稿目录
 catalog/v1/publish-metadata.json
-                               维护者正式发布模板的版本与展示元数据
+                               自动发布维护的当前正式版本 allowlist
 scripts/                       校验、预览、打包和 catalog 工具
 ```
 
-模板源码进入仓库，并不代表一定立即出现在 TraceMemo 模板市场。
+每个模板版本还包含用于市场展示的 `market.json`；它不进入安装包。
 
-正式市场由维护者的发布配置决定，因此可以：
-
-- 合并一个新模板但暂不上架
-- 保留多个模板版本
-- 指定当前正式发布版本
-- 在确认安装、预览和兼容性后再对用户发布
+普通模板源码合并后会自动进入 TraceMemo 模板市场。维护者仍可在合并前添加 `hold-publish`，让模板只进入仓库、暂不上架。
 
 ---
 
@@ -258,7 +253,7 @@ scripts/                       校验、预览、打包和 catalog 工具
     ↓
 合并模板源码
     ↓
-维护者正式发布
+自动正式发布
     ↓
 进入 TraceMemo 模板市场
 ```
@@ -267,7 +262,7 @@ scripts/                       校验、预览、打包和 catalog 工具
 
 **制作 → 预览 → Pull Request**
 
-正式 catalog、发布版本选择和市场上架由仓库维护者处理。
+正式 catalog 与市场上架由仓库自动发布机制处理；作者不需要编辑 catalog 文件。
 
 ---
 
