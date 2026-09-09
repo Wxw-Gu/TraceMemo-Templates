@@ -10,6 +10,7 @@ const root = path.resolve(__dirname, '..')
 const tmRoot = process.env.TRACEMEMO_ROOT || path.resolve(root, '..', 'TraceMemo')
 const version = process.env.TEMPLATE_VERSION || '1.0.1'
 const id = process.env.TEMPLATE_ID || 'community.github.tracememo.paperdaily'
+const installFromMarket = process.env.INSTALL_FROM_MARKET === '1'
 const sourceDir = path.join(root, 'templates', id, version)
 const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tracememo-paperdaily-preview-output-'))
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'tracememo-paperdaily-preview-user-'))
@@ -75,7 +76,15 @@ const main = async () => {
     app = await electron.launch({ executablePath: electronExecutable, args: [path.join(tmRoot, 'out', 'main', 'reportTemplateTest.js')], env: { ...process.env, TRACEMEMO_TEMPLATE_TEST_USER_DATA: userData, TRACEMEMO_REPORT_OUTPUT_DIR: outputDir } })
     const page = await app.firstWindow()
     await page.waitForLoadState('domcontentloaded')
-    const installed = await page.evaluate(async (p) => window.api.installReportTemplate(p), packagePath)
+    const catalog = installFromMarket
+      ? await page.evaluate(() => window.api.listReportTemplateCatalog())
+      : null
+    if (installFromMarket && (!catalog?.success || !catalog.catalog?.templates.some((item) => item.id === id && item.version === version))) {
+      throw new Error(`市场目录未包含 ${id}@${version}`)
+    }
+    const installed = installFromMarket
+      ? await page.evaluate(async ({ id, version }) => window.api.installReportTemplateFromCatalog(id, version), { id, version })
+      : await page.evaluate(async (p) => window.api.installReportTemplate(p), packagePath)
     if (!installed.success || installed.template?.id !== id || installed.template?.version !== version) throw new Error(`安装失败：${JSON.stringify(installed)}`)
     const exported = await page.evaluate(async (request) => window.api.exportGroupReport(request), { templateRef: { id, version }, report: fixture, metadata })
     if (!exported.success || !exported.htmlPath || !exported.pngPath) throw new Error(`导出失败：${JSON.stringify(exported)}`)
@@ -108,7 +117,8 @@ const main = async () => {
       }
       return { avatar: read('.important-card .avatar'), chatAvatar: read('.chat-avatar'), personAvatar: read('.person-chip img'), chatName: read('.chat-name'), bubble: read('.chat-bubble') }
     })
-    if (id === 'community.github.tracememo.paperdaily') {
+    const expectedAvatarSize = ['community.github.tracememo.paperdaily', 'community.github.wxw-gu.neon-command-daily'].includes(id)
+    if (expectedAvatarSize) {
       if (!details.avatar || Math.round(details.avatar.width) !== 34 || Math.round(details.avatar.height) !== 34) throw new Error(`重要消息头像尺寸异常：${JSON.stringify(details.avatar)}`)
       if (!details.chatAvatar || Math.round(details.chatAvatar.width) !== 34 || Math.round(details.chatAvatar.height) !== 34) throw new Error(`对话头像尺寸异常：${JSON.stringify(details.chatAvatar)}`)
       if (!details.personAvatar || Math.round(details.personAvatar.width) !== 22 || Math.round(details.personAvatar.height) !== 22) throw new Error(`参与者头像尺寸异常：${JSON.stringify(details.personAvatar)}`)
@@ -119,7 +129,7 @@ const main = async () => {
     if (png.readUInt32BE(16) !== manifest.capture.width) throw new Error(`导出 PNG 宽度不匹配：${png.readUInt32BE(16)}`)
     fs.copyFileSync(exported.pngPath, path.join(sourceDir, manifest.preview))
     fs.copyFileSync(exported.pngPath, path.join(root, 'previews', `${id}-${version}.png`))
-    fs.writeFileSync(path.join(evidenceDir, 'metrics.json'), JSON.stringify({ id, version, installed: installed.template, export: exported, metrics }, null, 2) + '\n')
+    fs.writeFileSync(path.join(evidenceDir, 'metrics.json'), JSON.stringify({ id, version, installFromMarket, installed: installed.template, export: exported, metrics }, null, 2) + '\n')
     await exportedPage.close()
     await browser.close()
     console.log(JSON.stringify({ id, version, htmlPath, pngPath, metrics }, null, 2))
